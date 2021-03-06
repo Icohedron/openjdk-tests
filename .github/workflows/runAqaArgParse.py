@@ -45,7 +45,7 @@ def main():
 
     parser = argparse.ArgumentParser(prog=keyword, add_help=False)
     # Improvement: Automatically resolve the valid choices for each argument populate them below, rather than hard-coding choices.
-    parser.add_argument('--sdk_resource', default=['nightly'], choices=['nightly', 'releases'], nargs='+')
+    parser.add_argument('--sdk_resource', default=['nightly'], choices=['nightly', 'releases', 'build'], nargs='+')
     parser.add_argument('--build_list', default=['openjdk'], choices=['openjdk', 'functional', 'system', 'perf', 'external'], nargs='+')
     parser.add_argument('--target', default=['_jdk_math'], nargs='+')
     parser.add_argument('--platform', default=['x86-64_linux'], nargs='+')

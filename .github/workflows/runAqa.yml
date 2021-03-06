@@ -90,10 +90,17 @@ jobs:
       matrix: ${{ fromJson(needs.parseComment.outputs.build_parameters) }}
     steps:
     - uses: AdoptOpenJDK/install-jdk@v1
+      if: matrix.sdk_resource != 'build'
       with:
         version: ${{ matrix.jdk_version }}
         source: ${{ matrix.sdk_resource }}
         impl: ${{ matrix.jdk_impl }}
+    - uses: AdoptOpenJDK/build-jdk@v1
+      if: matrix.sdk_resource == 'build'
+      with:
+        javaToBuild: jdk${{ matrix.jdk_version }}u
+        impl: ${{ matrix.jdk_impl }}
+        usePRRef: false
     # get-pr step by @Simran-B https://github.com/actions/checkout/issues/331#issuecomment-707103442
     - uses: actions/github-script@v3
       id: get-pr
