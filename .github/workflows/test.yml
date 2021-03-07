@@ -1,0 +1,44 @@
+name: "test"
+on:
+  issue_comment:
+    types: [created]
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.comment.body, 'test') && github.event.issue.pull_request
+    env:
+      JDK_VERSION: '8'
+      JDK_IMPL: 'hotspot'
+      CUSTOMIZED_SDK_URL: 'https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u-2021-02-16-06-25/OpenJDK8U-jdk_x64_linux_hotspot_2021-02-16-06-25.tar.gz'
+      SDK_RESOURCE: 'nightly'
+      JCOVTARGETCLASS: '*'
+      TEST: 'jdk_math'
+      JDK_REPO: 'https://github.com/AdoptOpenJDK/openjdk-jdk8u'
+      JDK_BRANCH: 'dev'
+    steps:
+    - name: download jtreg
+      run: |
+        wget https://ci.adoptopenjdk.net/job/jtreg/lastSuccessfulBuild/artifact/jtreg-4.2.0-tip.tar.gz
+        tar -zxvf jtreg-4.2.0-tip.tar.gz
+        rm -rf jtreg-4.2.0-tip.tar.gz
+    - name: download jdk
+      run: |
+        mkdir -p 'jdkbinary' && cd 'jdkbinary' && rm -rf *
+        if [ "$SDK_RESOURCE" == "customized" ]; then
+          wget ${CUSTOMIZED_SDK_URL}
+        else
+          release_type="ea"
+        if [ "$SDK_RESOURCE" == "releases" ]; then
+          release_type="ga"
+        fi
+          curl -OLJSks https://api.adoptopenjdk.net/v3/binary/latest/${JDK_VERSION}/${release_type}/linux/x64/jdk/${JDK_IMPL}/normal/adoptopenjdk  > /dev/null
+        fi
+        jdkFileName=`ls`
+        tar -zxvf ${jdkFileName} --strip-components=1 
+        rm -rf $jdkFileName
+        cd $GITHUB_WORKSPACE
+    - name: run jcov
+      run: |
+        git clone -b dev ${JDK_REPO} openjdk
+        ${GITHUB_WORKSPACE}/jdkbinary/bin/java -Xmx4g -jar ${GITHUB_WORKSPACE}/jtreg/lib/jtreg.jar -jdk:${GITHUB_WORKSPACE}/jdkbinary/ -r:rep -avm -jcov/classes:${GITHUB_WORKSPACE}/jdkbinary/jre/lib/rt.jar -jcov/source:${GITHUB_WORKSPACE}/jdkbinary/src.zip -jcov/include:${JCOVTARGETCLASS} ${GITHUB_WORKSPACE}/openjdk/jdk/test:${TEST} || true
+        tar -czvf jcov${TEST}.tar.gz rep
